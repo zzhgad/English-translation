@@ -1,6 +1,5 @@
 const $ = (selector) => document.querySelector(selector);
 const state = { words: [], selected: null, mistakes: [], bookWords: [] };
-const getApiKey = () => sessionStorage.getItem('deepseek_api_key') || '';
 const lookupCache = new Map();
 const fallback = {
   curious: ['adj.', '好奇的；求知欲强的', 'She was curious about how the machine worked.'],
@@ -39,7 +38,7 @@ async function selectWord(word, element) {
   const local = fallback[word];
   if (local) { lookupCache.set(word, [local[0], local[1], local[2], '/ local /']); paintDefinition(word, ...lookupCache.get(word)); return; }
   const requests = [fetchDictionaryDefinition(word).then(result => ({ value: [result.pos, result.definition, result.example, result.phonetic] }))];
-  if (getApiKey()) requests.push(fetchDeepSeekDefinition(word).then(result => ({ value: [result.pos, result.definition, result.example, result.phonetic] })));
+  requests.push(fetchDeepSeekDefinition(word).then(result => ({ value: [result.pos, result.definition, result.example, result.phonetic] })));
   try {
     const result = await Promise.any(requests.map(request => Promise.race([request, new Promise((_, reject) => setTimeout(() => reject(new Error('timeout')), 3500))])));
     if (state.selected !== word) return;
@@ -53,10 +52,9 @@ async function fetchDictionaryDefinition(word) {
   return { pos: meaning?.partOfSpeech || 'word', definition: definition?.definition || '暂无释义', example: definition?.example || 'Keep meeting new words in context.', phonetic: item.phonetic || '/ — /' };
 }
 async function fetchDeepSeekDefinition(word) {
-  const response = await fetch('https://api.deepseek.com/chat/completions', { method: 'POST', headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${getApiKey()}` }, body: JSON.stringify({ model: 'deepseek-chat', temperature: 0.2, messages: [{ role: 'system', content: '你是英语学习词典。只返回 JSON，不要 Markdown。字段必须是 pos、definition、example、phonetic。definition 用简洁中文，example 保持英文。' }, { role: 'user', content: `解释单词：${word}` }] }) });
-  if (!response.ok) throw new Error('DeepSeek request failed');
-  const data = await response.json(); const raw = data.choices?.[0]?.message?.content || ''; const clean = raw.replace(/^```json\s*|\s*```$/g, '').trim(); const parsed = JSON.parse(clean);
-  return { pos: parsed.pos || 'word', definition: parsed.definition || '暂无释义', example: parsed.example || 'Keep meeting new words in context.', phonetic: parsed.phonetic || '/ — /' };
+  const response = await fetch('/api/define', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ word }) });
+  if (!response.ok) throw new Error('DeepSeek proxy request failed');
+  return response.json();
 }
 function paintDefinition(word, pos, definition, example, phonetic) { $('#resultWord').textContent = word; $('#resultPos').textContent = pos; $('#resultDefinition').textContent = definition; $('#resultExample').textContent = example; $('#resultPhonetic').textContent = phonetic; setSavedState(); }
 function setSavedState() { const saved = state.mistakes.some(item => item.word === state.selected); $('#savedState').textContent = saved ? '已在错题组中' : '尚未加入错题组'; $('#addMistake').classList.toggle('saved', saved); $('#quickAdd').innerHTML = saved ? '<i data-lucide="check"></i>已加入' : '<i data-lucide="plus"></i>加入错题组'; initIcons(); }
@@ -79,11 +77,9 @@ $('#ocrBtn').addEventListener('click', async () => { const file = input.files[0]
 
 $('#bookInput').addEventListener('change', e => { const file = e.target.files[0]; if (!file) return; const reader = new FileReader(); reader.onload = ev => { const words = ev.target.result.split(/\r?\n/).map(w => w.trim().toLowerCase()).filter(Boolean); state.bookWords = [...new Set(words.filter(w => /^[a-z]+(?:['-][a-z]+)?$/.test(w)))]; const status = $('#bookStatus'); status.classList.remove('hidden'); if (state.bookWords.length < 20) { status.classList.add('error'); status.textContent = `已识别 ${state.bookWords.length} 个单词，还需要至少 ${20 - state.bookWords.length} 个`; $('#exportBook').disabled = true; } else { status.classList.remove('error'); status.textContent = `识别成功 · ${state.bookWords.length} 个单词，可生成词书`; $('#exportBook').disabled = false; } updateStats(); }; reader.readAsText(file); });
 $('#exportBook').addEventListener('click', () => { download('lingua-lens-词书.txt', state.bookWords.join('\n')); toast('词书 TXT 已生成'); });
-const apiModal = $('#apiModal'); const apiInput = $('#apiKey');
-$('#apiSettings').addEventListener('click', () => { apiInput.value = sessionStorage.getItem('deepseek_api_key') || ''; apiModal.classList.remove('hidden'); apiInput.focus(); });
+const apiModal = $('#apiModal');
+$('#apiSettings').addEventListener('click', () => { apiModal.classList.remove('hidden'); });
 $('#closeApi').addEventListener('click', () => apiModal.classList.add('hidden'));
-$('#saveApi').addEventListener('click', () => { const key = apiInput.value.trim(); if (key) sessionStorage.setItem('deepseek_api_key', key); else sessionStorage.removeItem('deepseek_api_key'); apiModal.classList.add('hidden'); toast(key ? 'DeepSeek 已启用' : 'DeepSeek 已关闭'); });
-$('#clearApi').addEventListener('click', () => { apiInput.value = ''; sessionStorage.removeItem('deepseek_api_key'); toast('API Key 已清除'); });
-$('#toggleKey').addEventListener('click', () => { apiInput.type = apiInput.type === 'password' ? 'text' : 'password'; });
+$('#closeApiAction').addEventListener('click', () => apiModal.classList.add('hidden'));
 apiModal.addEventListener('click', e => { if (e.target === apiModal) apiModal.classList.add('hidden'); });
 renderMistakes(); initIcons();

@@ -4,6 +4,7 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Lingua Lens · 英文阅读实验室</title>
+    <meta name="description" content="上传英文照片、提取文本、查询单词释义并整理错题本。" />
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
     <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=Noto+Sans+SC:wght@400;500;600;700&display=swap" rel="stylesheet" />
@@ -53,7 +54,7 @@
       </section>
       <footer class="footer"><span>Lingua Lens · 用每一次点击，建立你的词汇地图</span><span>本地优先 · 学习数据不离开设备</span></footer>
     </main>
-    <div class="modal hidden" id="apiModal" role="dialog" aria-modal="true" aria-labelledby="apiTitle"><div class="modal-card"><div class="modal-heading"><div><span class="step">OPTIONAL</span><h2 id="apiTitle">设置 DeepSeek 释义</h2></div><button class="icon-btn" id="closeApi" title="关闭"><i data-lucide="x"></i></button></div><p>输入你自己的 DeepSeek API Key。Key 只保存在当前浏览器会话中，不会写入项目文件。</p><label class="field-label" for="apiKey">API Key</label><div class="key-input"><input id="apiKey" type="password" placeholder="sk-..." autocomplete="off" /><button class="icon-btn" id="toggleKey" title="显示或隐藏"><i data-lucide="eye"></i></button></div><div class="modal-actions"><button class="secondary-btn" id="clearApi">清除 Key</button><button class="primary-btn" id="saveApi"><i data-lucide="save"></i>保存设置</button></div><span class="modal-note">建议使用服务端代理保护生产环境中的 API Key。</span></div></div>
+    <div class="modal hidden" id="apiModal" role="dialog" aria-modal="true" aria-labelledby="apiTitle"><div class="modal-card"><div class="modal-heading"><div><span class="step">OPTIONAL</span><h2 id="apiTitle">DeepSeek 释义服务</h2></div><button class="icon-btn" id="closeApi" title="关闭"><i data-lucide="x"></i></button></div><p>DeepSeek 请求通过后端代理完成，API Key 保存在服务器环境变量中，不会发送到浏览器。部署到 Vercel 后即可启用。</p><div class="modal-actions"><button class="primary-btn" id="closeApiAction"><i data-lucide="check"></i>知道了</button></div></div></div>
     <div class="toast" id="toast"></div>
     <script src="app.js"></script>
   </body>

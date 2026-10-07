@@ -1,0 +1,3 @@
+{
+  "functions": { "api/define.js": { "maxDuration": 10 } }
+}
