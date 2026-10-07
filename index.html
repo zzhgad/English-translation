@@ -1,0 +1,60 @@
+<!doctype html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Lingua Lens · 英文阅读实验室</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=Noto+Sans+SC:wght@400;500;600;700&display=swap" rel="stylesheet" />
+    <link rel="stylesheet" href="styles.css" />
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <script src="https://cdn.jsdelivr.net/npm/tesseract.js@5/dist/tesseract.min.js"></script>
+    <style>.api-label{font-size:10px;margin-left:3px}.modal{position:fixed;inset:0;background:rgba(18,39,34,.38);display:grid;place-items:center;padding:20px;z-index:4}.modal-card{width:min(430px,100%);background:#fff;border:1px solid var(--line);border-radius:12px;box-shadow:0 20px 60px rgba(18,43,37,.18);padding:23px}.modal-heading{display:flex;justify-content:space-between;align-items:start}.modal-heading h2{font-size:18px;margin:4px 0 0}.modal-card p{font-size:12px;color:var(--muted);line-height:1.65;margin:18px 0}.field-label{font-size:11px;font-weight:600;display:block;margin-bottom:7px}.key-input{display:flex;border:1px solid var(--line);border-radius:7px;align-items:center;padding-left:10px}.key-input:focus-within{border-color:var(--teal)}.key-input input{flex:1;border:0;outline:0;padding:10px 0;font-size:12px}.key-input .icon-btn{padding:7px}.modal-actions{display:flex;justify-content:flex-end;gap:8px;margin-top:17px}.modal-note{display:block;color:#9aa9a3;font-size:10px;line-height:1.5;margin-top:14px}</style>
+  </head>
+  <body>
+    <header class="topbar">
+      <div class="brand"><div class="brand-mark">LL</div><div><strong>Lingua Lens</strong><span>英文阅读实验室</span></div></div>
+      <div class="top-actions"><button class="icon-btn" id="apiSettings" title="设置 DeepSeek API"><i data-lucide="key-round"></i><span class="api-label">DeepSeek</span></button><button class="icon-btn" title="帮助"><i data-lucide="circle-help"></i></button><div class="avatar">L</div></div>
+    </header>
+
+    <main class="shell">
+      <section class="hero-row">
+        <div><p class="eyebrow">READ · UNDERSTAND · REMEMBER</p><h1>把每一段英文，变成<br /><em>可理解的知识。</em></h1><p class="hero-copy">上传一张包含英文的照片，Lingua Lens 会提取文本、解释词义，并帮你沉淀真正需要复习的词汇。</p></div>
+        <div class="stats"><div><span class="stat-number" id="wordCount">0</span><span>识别单词</span></div><div><span class="stat-number" id="mistakeCount">0</span><span>错题组</span></div><div><span class="stat-number" id="bookCount">0</span><span>词书词汇</span></div></div>
+      </section>
+
+      <section class="workspace">
+        <div class="left-column">
+          <div class="panel upload-panel">
+            <div class="panel-heading"><div><span class="step">01</span><h2>上传英文照片</h2></div><span class="soft-label">JPG / PNG</span></div>
+            <input id="imageInput" type="file" accept="image/png,image/jpeg,image/webp" hidden />
+            <label for="imageInput" class="dropzone" id="dropzone"><div class="upload-icon"><i data-lucide="scan-text"></i></div><strong>拖拽图片到这里，或点击上传</strong><span>建议使用清晰、光线均匀的英文段落照片</span><button type="button" class="secondary-btn" id="browseBtn"><i data-lucide="upload"></i>选择图片</button></label>
+            <div class="preview-wrap hidden" id="previewWrap"><img id="preview" alt="上传的英文图片" /><div class="preview-meta"><span id="fileName"></span><button class="text-btn" id="removeImage"><i data-lucide="x"></i>移除</button></div></div>
+            <div class="upload-footer"><span><i data-lucide="shield-check"></i> 图片仅在当前浏览器中处理</span><button class="primary-btn" id="ocrBtn" disabled><i data-lucide="sparkles"></i>识别英文</button></div>
+            <div class="progress hidden" id="progress"><div class="progress-track"><div id="progressBar"></div></div><span id="progressText">正在准备识别…</span></div>
+          </div>
+
+          <div class="panel passage-panel">
+            <div class="panel-heading"><div><span class="step">02</span><h2>电子文段</h2></div><button class="text-btn" id="sampleBtn"><i data-lucide="wand-sparkles"></i>载入示例</button></div>
+            <div class="passage-hint" id="passageHint"><i data-lucide="mouse-pointer-2"></i><span>点击任意单词，在右侧查看释义并加入错题组</span></div>
+            <div class="passage" id="passage"><div class="empty-state"><i data-lucide="text-cursor-input"></i><p>识别结果会显示在这里</p><span>还没有文本？可以先载入一段示例体验</span></div></div>
+            <div class="passage-footer"><span id="passageMeta">等待识别</span><button class="secondary-btn" id="copyText"><i data-lucide="copy"></i>复制全文</button></div>
+          </div>
+        </div>
+
+        <aside class="right-column">
+          <div class="panel dictionary-panel"><div class="panel-heading"><div><span class="step">03</span><h2>词义速查</h2></div><span class="live-dot">● 实时</span></div><div class="dictionary-empty" id="dictionaryEmpty"><div class="word-orb">Aa</div><strong>点击左侧单词</strong><span>释义、词性与例句会出现在这里</span></div><div class="word-result hidden" id="wordResult"><div class="word-top"><div><h3 id="resultWord">—</h3><span id="resultPhonetic">/ — /</span></div><button class="star-btn" id="addMistake" title="加入错题组"><i data-lucide="bookmark-plus"></i></button></div><div class="pos-tag" id="resultPos">word</div><p class="definition" id="resultDefinition">—</p><div class="example-box"><span>EXAMPLE</span><p id="resultExample">—</p></div><div class="result-footer"><span id="savedState">尚未加入错题组</span><button class="secondary-btn small" id="quickAdd"><i data-lucide="plus"></i>加入错题组</button></div></div></div>
+
+          <div class="panel mistakes-panel"><div class="panel-heading"><div><span class="step">04</span><h2>我的错题组</h2></div><span class="count-pill" id="mistakePill">0</span></div><div class="mistake-list" id="mistakeList"><div class="list-empty"><i data-lucide="bookmark"></i><span>还没有收藏的单词</span></div></div><div class="mistake-actions"><button class="secondary-btn" id="clearMistakes"><i data-lucide="trash-2"></i>清空</button><button class="primary-btn" id="exportMistakes"><i data-lucide="download"></i>导出错题本</button></div></div>
+
+          <div class="panel book-panel"><div class="panel-heading"><div><span class="step">05</span><h2>导入词书</h2></div><i data-lucide="book-open" class="heading-icon"></i></div><p>上传 TXT 文件，每行一个英文单词。识别成功的单词不少于 <strong>20 个</strong>，才可生成词书。</p><input id="bookInput" type="file" accept=".txt,text/plain" hidden /><label class="book-drop" for="bookInput"><i data-lucide="file-up"></i><span>点击选择 TXT 文件</span></label><div class="book-status hidden" id="bookStatus"></div><button class="primary-btn full" id="exportBook" disabled><i data-lucide="book-down"></i>生成词书 TXT</button></div>
+        </aside>
+      </section>
+      <footer class="footer"><span>Lingua Lens · 用每一次点击，建立你的词汇地图</span><span>本地优先 · 学习数据不离开设备</span></footer>
+    </main>
+    <div class="modal hidden" id="apiModal" role="dialog" aria-modal="true" aria-labelledby="apiTitle"><div class="modal-card"><div class="modal-heading"><div><span class="step">OPTIONAL</span><h2 id="apiTitle">设置 DeepSeek 释义</h2></div><button class="icon-btn" id="closeApi" title="关闭"><i data-lucide="x"></i></button></div><p>输入你自己的 DeepSeek API Key。Key 只保存在当前浏览器会话中，不会写入项目文件。</p><label class="field-label" for="apiKey">API Key</label><div class="key-input"><input id="apiKey" type="password" placeholder="sk-..." autocomplete="off" /><button class="icon-btn" id="toggleKey" title="显示或隐藏"><i data-lucide="eye"></i></button></div><div class="modal-actions"><button class="secondary-btn" id="clearApi">清除 Key</button><button class="primary-btn" id="saveApi"><i data-lucide="save"></i>保存设置</button></div><span class="modal-note">建议使用服务端代理保护生产环境中的 API Key。</span></div></div>
+    <div class="toast" id="toast"></div>
+    <script src="app.js"></script>
+  </body>
+</html>
